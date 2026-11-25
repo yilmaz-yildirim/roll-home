@@ -775,7 +775,7 @@ function scheduleBot(){clearTimeout(botT);if(!G||G.over||net==='client')return;c
 // turn timer (arena humans + online)
 setInterval(()=>{if(!G||G.over||net==='client'||G.kind==='local')return;const pl=G.players[G.turn];if(pl.type==='bot')return;if(animating())return;
   if(Date.now()>G.deadline){if(!G.rolled){doRoll(G);commit()}else if(G.legal.length){const b=botPick(G);Array.isArray(b)?doMove(G,b[0],b[1]):doMove(G,b);commit()}}},400);
-function animating(){return hopQ.length>0||!!hopCur||diceAnim>0}
+function animating(){if(document.hidden&&(hopQ.length||hopCur||diceAnim>0)){hopQ=[];hopCur=null;diceAnim=0;BD=null;syncDisp()}return hopQ.length>0||!!hopCur||diceAnim>0}
 function onState(){if(!G)return;if(!disp)syncDisp();
   if(G.seq!==lastSeq){lastSeq=G.seq;const e=G.ev;if(e){if(e.k==='roll'){diceAnim=.75;BD={t:performance.now()/1000,p:e.p,d:e.d,ax:[rndAxis(),rndAxis()],th:[12+Math.random()*5,13+Math.random()*5]};sfx.roll()}if(e.k==='move')hopQ.push(e)}}
   plates();$('gMsg').textContent=G.msg||(canAct()?(G.rolled?(G.legal.length?'Tap a glowing pawn':''):'Tap your dice to roll'):'');
@@ -950,19 +950,57 @@ function toggleDeaf(){VOICE.deaf=!VOICE.deaf;Object.values(VOICE.audio).forEach(
 function refreshVoiceUI(){const online=net!=='none';['gMic','gSpk'].forEach(id=>{const e=$(id);if(e)e.classList.toggle('show',online)});[$('gMic'),$('lbMic')].forEach(e=>e&&e.classList.toggle('live',VOICE.on));const t=$('lbMicT');if(t)t.textContent='Voice chat: '+(VOICE.on?'ON':'OFF');const sp=$('gSpk');if(sp)sp.textContent=VOICE.deaf?'🔇':'🔊';if(G&&$('game').classList.contains('on'))plates()}
 function stopVoice(){try{VOICE.calls.forEach(c=>c.close())}catch(e){}VOICE.calls=[];if(VOICE.stream)VOICE.stream.getTracks().forEach(t=>t.stop());VOICE.stream=null;VOICE.on=false;Object.values(VOICE.audio).forEach(a=>{a.srcObject=null;a.remove()});VOICE.audio={};VOICE.vs={};VOICE.called=new Set();refreshVoiceUI()}
 $('gMic').onclick=toggleMic;$('lbMic').onclick=toggleMic;$('gSpk').onclick=toggleDeaf;
-function leaveNet(){stopVoice();try{conns.forEach(c=>c.close());hostConn&&hostConn.close();peer&&peer.destroy()}catch(e){}conns=[];hostConn=null;peer=null;net='none';mySeat=0}
+function leaveNet(){stopVoice();relayStop();try{conns.forEach(c=>c.close&&c.close());hostConn&&hostConn.close&&hostConn.close();peer&&peer.destroy()}catch(e){}conns=[];hostConn=null;peer=null;net='none';mySeat=0}
 function broadcast(m){conns.forEach(c=>{try{c.open&&c.send(m)}catch(e){}})}
 function renderLobby(){$('lbSeats').innerHTML=tSeats.map((s,i)=>s.type==='off'?'':`<div class="seat"><i style="background:${COL[i]}"></i>${s.name}${s.type==='bot'?' <span class="tag">BOT</span>':''}${i===mySeat?' <span class="tag">YOU</span>':''}</div>`).join('')}
-function hostTable(){if(typeof Peer==='undefined'){toast('Online play needs an internet connection');return}if(fBet>PR.coins){toast('Not enough coins for this stake');return}
+// ================= relay transport: MQTT over WebSocket through public brokers (works across any NAT)
+const BROKERS=['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt','wss://test.mosquitto.org:8081/mqtt'];
+const RELAY={mqs:[],timers:[],base:'',id:''};let relayReady=()=>{};
+const _te=new TextEncoder(),_td=new TextDecoder();
+const mqLen=n=>{const o=[];do{let b=n%128;n=Math.floor(n/128);if(n>0)b|=128;o.push(b)}while(n>0);return o};
+const mqStr=s=>{const b=_te.encode(s);return [b.length>>8,b.length&255,...b]};
+class Mq{constructor(url,cid,onMsg,onUp){this.url=url;this.cid=cid;this.onMsg=onMsg;this.onUp=onUp;this.subs=[];this.up=false;this.dead=false;this.buf=new Uint8Array(0);this.pid=1;this.open()}
+  open(){if(this.dead)return;clearTimeout(this.rt);try{if(this.ws){this.ws.onclose=null;this.ws.close()}}catch(e){}let ws;try{ws=new WebSocket(this.url,['mqtt'])}catch(e){return this.retry()}this.ws=ws;this.buf=new Uint8Array(0);ws.binaryType='arraybuffer';
+    ws.onopen=()=>{const vh=[...mqStr('MQTT'),4,2,0,30],pl=mqStr(this.cid);this.raw([0x10,...mqLen(vh.length+pl.length),...vh,...pl])};
+    ws.onmessage=e=>{const d=new Uint8Array(e.data),b=new Uint8Array(this.buf.length+d.length);b.set(this.buf);b.set(d,this.buf.length);this.buf=b;this.parse()};
+    ws.onclose=()=>{this.up=false;clearInterval(this.pt);if(!this.dead)this.retry()};ws.onerror=()=>{}}
+  retry(){clearTimeout(this.rt);this.rt=setTimeout(()=>this.open(),1500)}
+  raw(a){try{if(this.ws&&this.ws.readyState===1)this.ws.send(a instanceof Uint8Array?a:new Uint8Array(a))}catch(e){}}
+  parse(){for(;;){const b=this.buf;if(b.length<2)return;let mul=1,len=0,i=1,c;do{if(i>=b.length)return;c=b[i++];len+=(c&127)*mul;mul*=128}while(c&128);if(b.length<i+len)return;
+    const type=b[0]>>4,qos=(b[0]>>1)&3,body=b.slice(i,i+len);this.buf=b.slice(i+len);
+    if(type===2){if(body[1]!==0){this.ws.close();continue}this.up=true;this.subs.forEach(t=>this.sub(t,1));clearInterval(this.pt);this.pt=setInterval(()=>this.raw([0xC0,0]),20000);this.onUp&&this.onUp(this)}
+    else if(type===3){const tl=(body[0]<<8)|body[1],topic=_td.decode(body.slice(2,2+tl));let off=2+tl;if(qos)off+=2;let msg=null;try{msg=JSON.parse(_td.decode(body.slice(off)))}catch(e){}if(msg)try{this.onMsg(topic,msg,this)}catch(e){console.error(e)}}}}
+  sub(t,again){if(!again&&!this.subs.includes(t))this.subs.push(t);if(!this.up)return;const id=(this.pid++&65535)||1;const p=[id>>8,id&255,...mqStr(t),0];this.raw([0x82,...mqLen(p.length),...p])}
+  pub(t,obj){const pl=_te.encode(JSON.stringify(obj)),h=mqStr(t),hd=[0x30,...mqLen(h.length+pl.length),...h],a=new Uint8Array(hd.length+pl.length);a.set(hd);a.set(pl,hd.length);this.raw(a)}
+  close(){this.dead=true;clearInterval(this.pt);clearTimeout(this.rt);try{this.raw([0xE0,0]);this.ws&&this.ws.close()}catch(e){}}}
+function relayStop(){RELAY.mqs.forEach(q=>q.close());RELAY.mqs=[];RELAY.timers.forEach(t=>clearInterval(t));RELAY.timers=[]}
+const rid=()=>Math.random().toString(36).slice(2,10);
+function relayHost(code){relayStop();RELAY.base='rollhome/v2/'+code.toLowerCase();RELAY.id='h'+rid();let shown=false;
+  BROKERS.forEach(url=>{const mq=new Mq(url,'rh'+RELAY.id+rid().slice(0,4),(t,msg,q)=>{if(!msg.m||!msg.f||msg.f===RELAY.id||net!=='host')return;let c=conns.find(x=>x.peer===msg.f);
+      if(!c){if(msg.m.t!=='hello')return;c={peer:msg.f,open:true,last:Date.now(),mq:q,send(m){this.mq.pub(RELAY.base+'/c',{f:RELAY.id,to:this.peer,m})},close(){}}}
+      if(c.mq!==q){c.mq=q;if(G&&conns.includes(c))c.send({t:'state',st:G})}c.last=Date.now();if(msg.m.t==='ping'){c.send({t:'pong'});return}hostRecv(c,msg.m)},
+    q=>{if(!shown){shown=true;relayReady()}if(G&&net==='host')commit()});mq.sub(RELAY.base+'/h');RELAY.mqs.push(mq)});
+  RELAY.timers.push(setInterval(()=>{const now=Date.now();conns.slice().forEach(c=>{if(c.last&&now-c.last>20000)hostDrop(c)})},3000))}
+function relayJoin(code){relayStop();RELAY.base='rollhome/v2/'+code.toLowerCase();let cid=null;try{cid=sessionStorage.getItem('rh_cid_'+code)}catch(e){}if(!cid){cid='c'+rid();try{sessionStorage.setItem('rh_cid_'+code,cid)}catch(e){}}RELAY.id=cid;
+  let chosen=null,lastHost=Date.now(),welcomed=false,tries=0;const hello=()=>({t:'hello',name:PR.name,skin:PR.skin,dskin:PR.dskin,frame:PR.frame,avatar:PR.avatar});
+  hostConn={open:true,send(m){(chosen?[chosen]:RELAY.mqs).forEach(q=>q.pub(RELAY.base+'/h',{f:cid,m}))},close(){}};
+  BROKERS.forEach(url=>{const mq=new Mq(url,'rh'+cid+rid().slice(0,4),(t,msg,q)=>{if(msg.to!==cid||!msg.m||net!=='client')return;if(!chosen){chosen=q;RELAY.mqs.filter(x=>x!==q).forEach(x=>x.close());RELAY.mqs=[q]}if(q!==chosen)return;
+      lastHost=Date.now();if(msg.m.t==='welcome')welcomed=true;if(msg.m.t==='pong')return;clientRecv(msg.m)},
+    q=>{q.pub(RELAY.base+'/h',{f:cid,m:hello()})});mq.sub(RELAY.base+'/c');RELAY.mqs.push(mq)});
+  RELAY.timers.push(setInterval(()=>{if(net!=='client')return;if(!welcomed){tries++;hostConn.send(hello());if(tries===6)$('lbErr').textContent='Still looking for the table… check the code. The host must keep the table screen open.';return}
+    hostConn.send({t:'ping'});if(Date.now()-lastHost>15000){const tx='Reconnecting to the host…';if(G&&!G.over)$('gMsg').textContent=tx;else if(!G)$('lbErr').textContent=tx;hostConn.send(hello())}},2500));
+  return cid}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return;RELAY.mqs.forEach(q=>{if(!q.dead&&(!q.ws||q.ws.readyState!==1))q.open();else q.raw([0xC0,0])})});
+function hostTable(){if(fBet>PR.coins){toast('Not enough coins for this stake');return}
   leaveNet();net='host';mySeat=0;const code=genCode();tCfg={v:fVer,team:fTeam,stake:fBet,n:fN,rules:{...RULES0,...(PR.rules||{})}};
   tSeats=[0,1,2,3].map(s=>!seatList(fN).includes(s)?{type:'off'}:s===0?{type:'human',name:PR.name,skin:PR.skin,dskin:PR.dskin,frame:PR.frame,avatar:PR.avatar}:{type:'bot',name:'Open seat',open:1});
   $('lbCode').textContent='·····';$('lbErr').textContent='Creating table…';$('lbInfo').textContent='Share this code. Empty seats are filled with bots.';$('lbStart').disabled=true;$('lbStart').style.display='';renderLobby();go('lobby');
-  peer=new Peer('rh2-'+code.toLowerCase(),PEER_OPTS);
-  peer.on('call',onIncomingCall);
-  peer.on('open',()=>{tSeats[0].pid=peer.id;$('lbCode').textContent=code;$('lbErr').textContent=`${VNAME[tCfg.v]} · ${tCfg.team?'Team Up · ':''}stake ${fmt(tCfg.stake)}`;$('lbStart').disabled=false});
-  peer.on('error',e=>{$('lbErr').textContent=e.type==='unavailable-id'?'Code taken, try again.':'Connection problem: '+(e.type||'unknown')});
-  peer.on('connection',c=>{c.on('data',m=>hostRecv(c,m));c.on('close',()=>hostDrop(c))})}
-function hostRecv(c,m){if(m.t==='hello'){if(G&&!G.over){c.send({t:'full',why:'Game already started'});return}const s=tSeats.findIndex((x,i)=>i>0&&x.open);if(s<0){c.send({t:'full',why:'Table is full'});return}
+  const vid='rh2-'+code.toLowerCase();tSeats[0].pid=vid;
+  if(typeof Peer!=='undefined'){try{peer=new Peer(vid,PEER_OPTS);peer.on('call',onIncomingCall);peer.on('error',()=>{})}catch(e){}}
+  relayReady=()=>{if(net!=='host')return;$('lbCode').textContent=code;$('lbErr').textContent=`${VNAME[tCfg.v]} · ${tCfg.team?'Team Up · ':''}stake ${fmt(tCfg.stake)}`;$('lbStart').disabled=false};
+  relayHost(code);setTimeout(()=>{if(net==='host'&&$('lbStart').disabled)$('lbErr').textContent='Cannot reach the game server. Check your internet.'},9000)}
+function hostRecv(c,m){if(m.t==='hello'){const old=tSeats.findIndex((x,i)=>i>0&&x.pid===c.peer);if(old>=0){c.seat=old;conns=conns.filter(x=>x.peer!==c.peer);conns.push(c);if(G&&G.players[old]){if(G.players[old].type==='bot'&&!G.over){G.players[old].type='remote';G.players[old].name=G.players[old].name.replace(' (left)','');G.msg=G.players[old].name+' is back.'}}c.send({t:'welcome',seat:old,cfg:tCfg});c.send({t:'lobby',seats:tSeats});if(G)commit();return}
+    if(G&&!G.over){c.send({t:'full',why:'Game already started'});return}const s=tSeats.findIndex((x,i)=>i>0&&x.open);if(s<0){c.send({t:'full',why:'Table is full'});return}
     tSeats[s]={type:'remote',pid:c.peer,name:(m.name||'Player').slice(0,14),skin:m.skin||'classic',dskin:m.dskin||'classic',frame:m.frame||'plain',avatar:m.avatar||'letter'};c.seat=s;conns.push(c);c.send({t:'welcome',seat:s,cfg:tCfg});renderLobby();broadcast({t:'lobby',seats:tSeats});for(const k in VOICE.vs)c.send({t:'vstate',s:+k,on:VOICE.vs[k]});later(callAll,600);return}
   if(m.t==='vstate'){VOICE.vs[c.seat]=!!m.on;broadcast({t:'vstate',s:c.seat,on:!!m.on});refreshVoiceUI();return}
   if(m.t==='chat'&&G){showChat(c.seat,m.k);broadcast({t:'chat',s:c.seat,k:m.k});return}
@@ -971,19 +1009,16 @@ function hostDrop(c){conns=conns.filter(x=>x!==c);if(!(c.seat>0))return;if(G&&!G
 $('lbStart').onclick=()=>{if(net!=='host')return;if(tCfg.stake>PR.coins){toast('Not enough coins');return}PR.coins-=tCfg.stake;saveP();const names=[...BOTN].sort(()=>Math.random()-.5);
   const players=tSeats.map(s=>s.type==='off'?{type:'off'}:s.open?{type:'bot',name:names.pop()}:{...s});startGame({players,v:tCfg.v,team:tCfg.team,stake:tCfg.stake,prize:0,kind:'online',rules:tCfg.rules})};
 $('lbBack').onclick=()=>{leaveNet();go('friends')};
-function joinTable(code){if(code.length!==5){toast('Codes have 5 letters');return}if(typeof Peer==='undefined'){toast('Online play needs an internet connection');return}
-  leaveNet();net='client';tSeats=null;$('lbCode').textContent=code;$('lbInfo').textContent='Joining table…';$('lbErr').textContent='Connecting…';$('lbSeats').innerHTML='';$('lbStart').style.display='none';go('lobby');
-  peer=new Peer(undefined,PEER_OPTS);peer.on('call',onIncomingCall);
-  peer.on('open',()=>{hostConn=peer.connect('rh2-'+code.toLowerCase(),{reliable:true});const to=setTimeout(()=>{$('lbErr').textContent='No table found with that code.'},9000);
-    hostConn.on('open',()=>{clearTimeout(to);hostConn.send({t:'hello',name:PR.name,skin:PR.skin,dskin:PR.dskin,frame:PR.frame,avatar:PR.avatar})});
-    hostConn.on('data',m=>{if(m.t==='welcome'){mySeat=m.seat;tCfg=m.cfg;$('lbInfo').textContent='You are in! Waiting for the host to start.';$('lbErr').textContent=`${VNAME[tCfg.v]} · ${tCfg.team?'Team Up · ':''}stake ${fmt(tCfg.stake)}`}
-      else if(m.t==='full')$('lbErr').textContent=m.why;
-      else if(m.t==='lobby'){tSeats=m.seats;renderLobby();later(callAll,600)}
-      else if(m.t==='chat'){if(G)showChat(m.s,m.k)}
-      else if(m.t==='vstate'){VOICE.vs[m.s]=!!m.on;refreshVoiceUI()}
-      else if(m.t==='state'){const first=!G;G=m.st;G.kind='online';if(first){if(tCfg&&tCfg.stake){PR.coins=Math.max(0,PR.coins-tCfg.stake);saveP()}disp=null;hopQ=[];hopCur=null;lastSeq=G.seq-1;openGame();syncDisp();goal('play')}onState()}});
-    hostConn.on('close',()=>{if(net==='client'&&G&&!G.over){$('gMsg').textContent='The host closed the table.'}})});
-  peer.on('error',e=>{$('lbErr').textContent=e.type==='peer-unavailable'?'No table found with that code.':'Connection problem: '+(e.type||'unknown')})}
+function joinTable(code){code=(code||'').trim().toUpperCase().replace(/\s/g,'');if(code.length!==5){toast('Codes have 5 letters');return}
+  leaveNet();net='client';tSeats=null;tCfg=null;$('lbCode').textContent=code;$('lbInfo').textContent='Joining table…';$('lbErr').textContent='Connecting…';$('lbSeats').innerHTML='';$('lbStart').style.display='none';go('lobby');
+  const cid=relayJoin(code);
+  if(typeof Peer!=='undefined'){try{peer=new Peer(cid,PEER_OPTS);peer.on('call',onIncomingCall);peer.on('error',()=>{})}catch(e){}}}
+function clientRecv(m){if(m.t==='welcome'){mySeat=m.seat;tCfg=m.cfg;$('lbInfo').textContent='You are in! Waiting for the host to start.';$('lbErr').textContent=`${VNAME[tCfg.v]} · ${tCfg.team?'Team Up · ':''}stake ${fmt(tCfg.stake)}`}
+  else if(m.t==='full')$('lbErr').textContent=m.why;
+  else if(m.t==='lobby'){tSeats=m.seats;renderLobby();later(callAll,600)}
+  else if(m.t==='chat'){if(G)showChat(m.s,m.k)}
+  else if(m.t==='vstate'){VOICE.vs[m.s]=!!m.on;refreshVoiceUI()}
+  else if(m.t==='state'){const first=!G;G=m.st;G.kind='online';if(first){if(tCfg&&tCfg.stake){PR.coins=Math.max(0,PR.coins-tCfg.stake);saveP()}disp=null;hopQ=[];hopCur=null;lastSeq=G.seq-1;openGame();syncDisp();goal('play')}onState()}}
 // ================= confetti
 function confetti(){const c=$('confetti'),x=c.getContext('2d');c.width=innerWidth;c.height=innerHeight;const ps=Array.from({length:140},()=>({x:Math.random()*c.width,y:-20-Math.random()*c.height*.5,vx:(Math.random()-.5)*3,vy:2+Math.random()*4,r:Math.random()*6.28,vr:(Math.random()-.5)*.3,c:[...COL,'#ffcc33','#fff'][Math.random()*6|0],w:6+Math.random()*6}));let n=0;
   (function f(){x.clearRect(0,0,c.width,c.height);for(const p of ps){p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.w/2,-p.w/4,p.w,p.w/2);x.restore()}if(++n<220)requestAnimationFrame(f);else x.clearRect(0,0,c.width,c.height)})()}
