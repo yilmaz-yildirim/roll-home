@@ -128,7 +128,7 @@ body{background:#1a0826;font:700 16px/1.25 'Baloo 2',system-ui,sans-serif;color:
 .gin{flex:1;border:0;border-radius:10px;padding:8px;font:800 16px 'Baloo 2',sans-serif;background:#fff;color:#3a1157;width:0;text-align:center}
 .mk{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 /* game */
-#game{position:fixed;inset:0;max-width:520px;margin:0 auto;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(120% 70% at 50% 40%,#5a1f80 0%,#3a1157 55%,#1f0830 100%);padding:max(8px,env(safe-area-inset-top)) 8px max(8px,env(safe-area-inset-bottom))}
+#game{position:fixed;inset:0;max-width:600px;margin:0 auto;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:radial-gradient(120% 70% at 50% 40%,#5a1f80 0%,#3a1157 55%,#1f0830 100%);padding:max(8px,env(safe-area-inset-top)) 3px max(8px,env(safe-area-inset-bottom))}.plates{padding:0 5px}
 #game.on{display:flex}
 .gtop{display:flex;align-items:center;gap:8px;width:100%}
 .pot{flex:1;text-align:center;background:rgba(0,0,0,.35);border-radius:999px;padding:4px 10px;font-size:15px;display:flex;align-items:center;justify-content:center;gap:6px}
@@ -142,7 +142,7 @@ body{background:#1a0826;font:700 16px/1.25 'Baloo 2',system-ui,sans-serif;color:
 .pnm{font-size:14px;line-height:1.1;flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.pnm small{display:block;overflow:hidden;text-overflow:ellipsis}.plate{gap:6px}.pnm small{display:block;font-size:11px;color:var(--mute)}
 .tag{display:inline-block;font-size:10px;background:rgba(255,255,255,.2);border-radius:6px;padding:0 5px;margin-left:4px;vertical-align:middle}
 .dslot{width:58px;height:58px;border-radius:14px;flex:none;border:0;background:none;box-shadow:none;cursor:pointer;padding:0;display:none}
-.plate.act .dslot{display:block}.plate{transition:flex .25s}.plate.act{flex:1.7}
+.plate.act .dslot{display:block}.plate{transition:flex .25s}.plate.act{flex:2}.pnm .stp{color:var(--gold);font-size:11px}
 .dslot.go{animation:pulse 1s infinite}
 @keyframes pulse{50%{transform:scale(1.1)}}
 .dslot canvas{width:100%;height:100%;display:block}
@@ -159,7 +159,7 @@ body{background:#1a0826;font:700 16px/1.25 'Baloo 2',system-ui,sans-serif;color:
 .reward{font:800 40px 'Baloo 2',sans-serif;color:var(--gold);display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0}
 .toast{position:fixed;left:50%;top:16%;transform:translateX(-50%);background:rgba(0,0,0,.75);border-radius:14px;padding:8px 16px;font-size:15px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:30;white-space:nowrap}
 .toast.on{opacity:1}
-.dice2{display:flex;gap:5px}.dslot.two{width:84px;height:44px;padding:2px;background:none;box-shadow:none}.dslot.two canvas{width:40px;height:40px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.45))}
+.dice2{display:flex;gap:5px}.dslot.two{width:108px;height:54px;padding:1px;background:none;box-shadow:none}.dslot.two canvas{width:52px;height:52px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.45))}
 .mv{display:flex;gap:6px;justify-content:center;min-height:36px;align-items:center}.mv button{border:0;border-radius:10px;background:rgba(255,255,255,.15);color:#fff;font:800 16px 'Baloo 2',sans-serif;min-width:44px;min-height:34px;cursor:pointer}.mv button.on{background:var(--gold);color:#5a2b00}
 .chatb{width:40px;height:40px;border-radius:12px;border:0;background:rgba(0,0,0,.3);color:#fff;font:800 15px 'Baloo 2',sans-serif;cursor:pointer}
 .phr{position:fixed;left:50%;transform:translateX(-50%);bottom:90px;display:none;grid-template-columns:1fr 1fr;gap:6px;background:rgba(20,6,30,.95);padding:10px;border-radius:16px;z-index:15;width:min(340px,90vw)}.phr.on{display:grid}.phr button{border:0;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font:700 14px 'Baloo 2',sans-serif;min-height:40px;cursor:pointer}
@@ -501,7 +501,7 @@ function paintDie(c,s,v,sk,pc,rot){const d=DICEBY[sk]||DICE[0];c.save();if(rot){
   {const gl=c.createLinearGradient(0,0,0,s);gl.addColorStop(0,'rgba(255,255,255,.55)');gl.addColorStop(.45,'rgba(255,255,255,0)');gl.addColorStop(1,'rgba(0,0,0,.16)');c.fillStyle=gl;c.fillRect(0,0,s,s)}
   c.restore();c.strokeStyle='rgba(0,0,0,.18)';c.lineWidth=s*.035;c.stroke();
   const P={1:[[.5,.5]],2:[[.28,.28],[.72,.72]],3:[[.28,.28],[.5,.5],[.72,.72]],4:[[.28,.28],[.72,.28],[.28,.72],[.72,.72]],5:[[.28,.28],[.72,.28],[.5,.5],[.28,.72],[.72,.72]],6:[[.28,.25],[.72,.25],[.28,.5],[.72,.5],[.28,.75],[.72,.75]]}[v];
-  c.fillStyle=d.k==='classic'?pc:d.pip;if(d.deco==='rainbow')c.fillStyle='#fff';for(const [px,py] of P)pipShape(c,px*s,py*s,s*.085,d.shape);
+  c.fillStyle=d.k==='classic'?pc:d.pip;if(d.deco==='rainbow')c.fillStyle='#fff';for(const [px,py] of P)pipShape(c,px*s,py*s,s*.098,d.shape);
   if(d.deco==='face'){c.fillStyle='#fff';c.beginPath();c.arc(s*.82,s*.14,s*.1,0,6.3);c.arc(s*.62,s*.12,s*.08,0,6.3);c.fill();c.fillStyle='#1b1424';c.beginPath();c.arc(s*.84,s*.16,s*.05,0,6.3);c.arc(s*.63,s*.14,s*.04,0,6.3);c.fill()}
   if(d.deco==='horns'){c.fillStyle='#1b1424';c.beginPath();c.moveTo(s*.08,s*.2);c.lineTo(s*.02,0);c.lineTo(s*.25,s*.1);c.fill();c.beginPath();c.moveTo(s*.92,s*.2);c.lineTo(s*.98,0);c.lineTo(s*.75,s*.1);c.fill()}
   c.restore()}
@@ -664,7 +664,7 @@ const teamOf=s=>s%2;
 let G=null,net='none',conns=[],hostConn=null,peer=null,mySeat=0,disp=null,hopQ=[],hopCur=null,hopV=0,lastSeq=-1,diceAnim=0,botT=null,toT=null;
 function newGame(o){let v=o.v||'spanish';if(v==='classic')v='spanish';const np=v==='quick'?2:4;const rules={...RULES0,...(o.rules||{})};
   const st={players:o.players,np,v,quick:v==='quick',two:true,rules,moves:[],dbl:0,again:false,mustOpen:false,opened:null,arrive:o.players.map(()=>Array(np).fill(0)),clock:0,last:[-1,-1,-1,-1],tier:o.tier||0,team:!!o.team,stake:o.stake||0,prize:o.prize||0,kind:o.kind,mode:o.mode||'',
-    tok:o.players.map(pl=>pl.type==='off'?[]:Array(np).fill(-1)),turn:0,dice:0,rolled:false,legal:[],done:[],ev:null,seq:0,msg:'',over:false,deadline:0,winTeam:-1,stats:o.players.map(()=>({cap:0,home:0,six:0}))};
+    tok:o.players.map(pl=>pl.type==='off'?[]:Array(np).fill(-1)),turn:0,dice:0,rolled:false,legal:[],done:[],ev:null,seq:0,msg:'',over:false,deadline:0,winTeam:-1,stats:o.players.map(()=>({cap:0,home:0,six:0,steps:0}))};
   st.tok.forEach(a=>{if(a.length&&(rules.startOne||st.quick))a[0]=0});
   // opening roll: highest single die starts, ties roll again
   let cand=active(st),best=0,hist=[];for(let k=0;k<10&&cand.length>1;k++){const r=cand.map(s=>[s,1+Math.floor(Math.random()*6)]);best=Math.max(...r.map(x=>x[1]));hist=r;cand=r.filter(x=>x[1]===best).map(x=>x[0])}
@@ -680,18 +680,18 @@ function end(st){const prog=i=>st.tok[i].reduce((a,r)=>a+(r<0?-5:r),0);const lef
 // ---- board occupancy
 function ckey(p,r){if(r<0||r>=GOAL)return null;return r<=LAST?'t'+gIdx(p,r):'l'+p+'_'+r}
 function occAt(st,key,skipP,skipI){const out=[];if(!key)return out;st.tok.forEach((arr,q)=>arr.forEach((r,j)=>{if(q===skipP&&j===skipI)return;if(ckey(q,r)===key)out.push([q,j])}));return out}
-function ownGates(st,p){const m={};st.tok[p].forEach((r,i)=>{const k=ckey(p,r);if(k)(m[k]=m[k]||[]).push(i)});return Object.entries(m).filter(([k,a])=>a.length>=2).map(([k,a])=>({k,a}))}
+function ownGates(st,p){const m={};st.tok[p].forEach((r,i)=>{const k=ckey(p,r);if(k)(m[k]=m[k]||[]).push(i)});return Object.entries(m).filter(([k,a])=>a.length>=2||occAt(st,k,-1,-1).length>=2).map(([k,a])=>({k,a}))}
 // can pawn i of p move v steps? returns null or {to,capt:[[q,j]]}
 function tryLand(st,p,i,v){const from=st.tok[p][i];if(from>=GOAL)return null;
   if(from<0){if(v!==5&&v!=='s')return null;const k=ckey(p,0),L=occAt(st,k,p,i);const own=L.filter(([q])=>q===p);if(own.length>=2)return null;
     if(L.length>=2){const riv=L.filter(([q])=>!mates(st,p,q));if(!riv.length)return null;riv.sort((a,b)=>st.arrive[b[0]][b[1]]-st.arrive[a[0]][a[1]]);return {to:0,capt:[riv[0]]}}
-    if(st.opened&&L.length===1&&L[0][0]===p&&(k===st.opened.k||(st.opened.a.includes(i)&&st.opened.a.includes(L[0][1]))))return null;
+    if(st.opened&&L.length===1&&(k===st.opened.k||(L[0][0]===p&&st.opened.a.includes(i)&&st.opened.a.includes(L[0][1]))))return null;
     return {to:0,capt:[]}}
   if(typeof v!=='number')return null;const to=from+v;if(to>GOAL)return null;
   for(let r=from+1;r<to;r++){if(occAt(st,ckey(p,r),p,i).length>=2)return null}
   if(to===GOAL)return {to,capt:[]};
   const k=ckey(p,to),L=occAt(st,k,p,i);if(L.length>=2)return null;
-  if(L.length===1){const [q,j]=L[0];
+  if(L.length===1){const [q,j]=L[0];if(st.opened&&k===st.opened.k)return null;
     if(q===p){if(st.opened&&(k===st.opened.k||(st.opened.a.includes(i)&&st.opened.a.includes(j))))return null;return {to,capt:[]}}
     if(to<=LAST&&!SAFE.has(gIdx(p,to))&&!mates(st,p,q))return {to,capt:[[q,j]]};return {to,capt:[]}}
   return {to,capt:[]}}
@@ -722,7 +722,7 @@ function doRoll(st,forced){if(st.rolled||st.over)return;const p=mover(st);
       st.msg=nm(st,st.turn)+' rolled three doubles!'+(back?' Last moved pawn goes back home.':' Turn lost.');st.moves=[];st.legal=[];st.again=false;later(()=>{if(G!==st)return;nextTurn(st);commit()},1000);return}}else st.dbl=0;
   st.moves=[a,b];st.mustOpen=a===b&&st.rules.gateOpen&&ownGates(st,p).length>0;st.legal=legalS(st,p);
   if(!st.legal.length){st.msg=nm(st,st.turn)+' rolled '+a+'+'+b+', no moves.';later(()=>{if(G!==st)return;endTurnS(st);commit()},900)}else st.msg=st.mustOpen?'Doubles: open your blockade first':(p!==st.turn?'You finished: now move your partner’s pawns':'')}
-function doMoveS(st,i,v){const ok=st.legal.find(l=>l[0]===i&&(v==null||l[1]===v));if(!ok)return;v=ok[1];const p=mover(st),pt=st.turn;const r=applyCore(st,p,i,v);
+function doMoveS(st,i,v){const ok=st.legal.find(l=>l[0]===i&&(v==null||l[1]===v));if(!ok)return;v=ok[1];const p=mover(st),pt=st.turn;const r=applyCore(st,p,i,v);if(r.from>=0)st.stats[pt].steps=(st.stats[pt].steps||0)+(r.to-r.from);
   if(r.capt.length){st.stats[pt].cap+=r.capt.length;st.msg=nm(st,pt)+' captured! +20 bonus'}else st.msg='';
   if(r.to===GOAL){st.stats[pt].home++;st.msg=nm(st,p)+' reached home! +10 bonus';if(st.tok[p].every(x=>x===GOAL)&&!st.done.includes(p)){st.done.push(p);st.msg=nm(st,p)+' finished!'}}
   st.seq++;st.ev={k:'move',p,i,from:r.from,to:r.to,capt:r.capt};
@@ -778,7 +778,7 @@ function plates(){setView();$('plTop').innerHTML='';$('plBot').innerHTML='';cons
   const order=[0,1,3,2].map(c=>[0,1,2,3].find(s=>corner(s)===c));
   for(const s of order){const c=corner(s),pl=G.players[s],el=document.createElement('div');const right=c===1||c===2;el.className='plate'+(right?' right':'')+(pl.type==='off'?' off':'')+(G.turn===s&&!G.over?' act':'');
     const fin=G.done.includes(s),home=(G.tok[s]||[]).filter(r=>r===GOAL).length;const mine=isMine(s)&&(net!=='none'||G.kind==='arena');
-    el.innerHTML=`<div class="pav fr-${isMine(s)?PR.frame:(pl.frame||'plain')}" style="--c:${COL[s]}">${avInner(isMine(s)&&G.kind!=='local'?PR.avatar:pl.avatar,pl.name||'?')}<svg viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="163" stroke-dashoffset="0" data-ring="${s}" opacity="0"/></svg></div><div class="pnm">${pl.name||CNAME[s]}${pl.type==='bot'?'<span class="tag">BOT</span>':''}${mine?'<span class="tag">YOU</span>':''}${(isMine(s)&&net!=='none'?VOICE.on:VOICE.vs[s])?VTAG:''}${G.team?`<small>Team ${teamOf(s)?'B':'A'} · ${home}/${G.np} home</small>`:`<small>${fin?'Finished #'+(G.done.indexOf(s)+1):home+'/'+G.np+' home'}</small>`}</div>${G.two?`<button class="dslot two" data-d="${s}" aria-label="Roll"><div class="dice2"><canvas width="96" height="96" data-k="0"></canvas><canvas width="96" height="96" data-k="1"></canvas></div></button>`:`<button class="dslot" data-d="${s}" aria-label="Roll"><canvas width="116" height="116"></canvas></button>`}`;
+    el.innerHTML=`<div class="pav fr-${isMine(s)?PR.frame:(pl.frame||'plain')}" style="--c:${COL[s]}">${avInner(isMine(s)&&G.kind!=='local'?PR.avatar:pl.avatar,pl.name||'?')}<svg viewBox="0 0 56 56"><circle cx="28" cy="28" r="26" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="163" stroke-dashoffset="0" data-ring="${s}" opacity="0"/></svg></div><div class="pnm">${pl.name||CNAME[s]}${pl.type==='bot'?'<span class="tag">BOT</span>':''}${mine?'<span class="tag">YOU</span>':''}${(isMine(s)&&net!=='none'?VOICE.on:VOICE.vs[s])?VTAG:''}${(G.team?`<small>Team ${teamOf(s)?'B':'A'} · ${home}/${G.np} home</small>`:`<small>${fin?'Finished #'+(G.done.indexOf(s)+1):home+'/'+G.np+' home'}</small>`)+`<small class="stp">${(G.stats[s]&&G.stats[s].steps)||0} steps</small>`}</div>${G.two?`<button class="dslot two" data-d="${s}" aria-label="Roll"><div class="dice2"><canvas width="96" height="96" data-k="0"></canvas><canvas width="96" height="96" data-k="1"></canvas></div></button>`:`<button class="dslot" data-d="${s}" aria-label="Roll"><canvas width="116" height="116"></canvas></button>`}`;
     const ch=CHATS[s];if(ch&&ch.until>Date.now()){const b=document.createElement('div');if(ch.k>=100){b.className='bub e';b.innerHTML=`<img src="${emURL(EMOJIS[ch.k-100].k)}" alt="">`}else{b.className='bub';b.textContent=PHR[ch.k]}el.appendChild(b)}
     $(c<2?'plTop':'plBot').appendChild(el)}
   document.querySelectorAll('.dslot').forEach(b=>{const s=+b.dataset.d;b.classList.toggle('go',canAct()&&!G.rolled&&s===G.turn);b.onclick=()=>{if(canAct()&&!G.rolled&&!animating()&&s===G.turn)rollNow()}});
@@ -791,7 +791,7 @@ function showEnd(){if(!G)return;const meSeat=net==='client'?mySeat:G.players.fin
   let bonus=0,tro=0;if(G.kind==='arena'){if(wonMe){PR.streak++;PR.bestStreak=Math.max(PR.bestStreak,PR.streak);bonus=Math.round(rw*Math.min(.5,(PR.streak-1)*.1));tro=20+G.tier*10}else{PR.streak=0;tro=-8}weekCheck();PR.trophy=Math.max(0,PR.trophy+tro);rw+=bonus}
   if(G.kind!=='local'||net!=='none'){PR.games++;if(wonMe){PR.wins++;goal('win')}const ms=meSeat>=0?G.stats[meSeat]:null;if(ms){PR.caps+=ms.cap;goal('cap',ms.cap);goal('home',ms.home);goal('six',ms.six)}PR.coins+=rw;addXP(wonMe?60:20);if(G.kind!=='local'&&(wonMe||Math.random()<.35)){PR.packs++;var gotPack=1}saveP()}
   $('eT').textContent=title;$('eRw').innerHTML=(rw?`<svg width="40" height="40"><use href="#coin"/></svg>+${fmt(rw)}`:'')+(bonus||tro?`<div class="small" style="width:100%">${bonus?'Win streak x'+PR.streak+': +'+fmt(bonus)+' · ':''}${tro?(tro>0?'+':'')+tro+' trophies':''}</div>`:'');if(typeof gotPack!=='undefined'&&gotPack)$('eRw').innerHTML+='<div class="small" style="width:100%;color:#3fd88a">+1 card pack for your album!</div>';if(wonMe||G.kind==='local')confetti();$('eRw').style.flexWrap='wrap';
-  $('eR').innerHTML=G.done.map((p,k)=>`<div><b>#${k+1}</b><i style="background:${COL[p]}"></i>${nm(G,p)}</div>`).join('');$('ovEnd').classList.add('on');wonMe||G.kind==='local'?sfx.win():sfx.lose()}
+  $('eR').innerHTML=G.done.map((p,k)=>`<div><b>#${k+1}</b><i style="background:${COL[p]}"></i>${nm(G,p)}<small style="margin-left:auto;opacity:.8;font-size:12px">${(G.stats[p]&&G.stats[p].steps)||0} steps · ${(G.stats[p]&&G.stats[p].cap)||0} caps</small></div>`).join('');$('ovEnd').classList.add('on');wonMe||G.kind==='local'?sfx.win():sfx.lose()}
 $('eOk').onclick=()=>{$('ovEnd').classList.remove('on');closeGame()};
 $('gQuit').onclick=()=>{if(G&&!G.over&&(G.kind==='arena'||net!=='none'))$('ovQuit').classList.add('on');else closeGame()};
 $('qNo').onclick=()=>$('ovQuit').classList.remove('on');
@@ -801,7 +801,7 @@ function openGame(){applyTheme();setTimeout(refreshVoiceUI,0);$('game').classLis
 function closeGame(){clearTimeout(botT);leaveNet();G=null;$('game').classList.remove('on');$('app').style.display='flex';go('home')}
 // ================= render board
 const cv=$('cv'),g=cv.getContext('2d');let S=360,DPR=1,U=24,FR=10,Lc=16,W3=36,hb=112;
-function fit(){const W=Math.min(innerWidth,520)-16,H=innerHeight-16-2*84-40-30;S=Math.max(240,Math.floor(Math.min(W,H)));DPR=Math.min(2,devicePixelRatio||1);cv.width=S*DPR;cv.height=S*DPR;cv.style.width=S+'px';cv.style.height=S+'px';U=S/N;FR=Math.round(S*.03);Lc=(S-2*FR)/20.8;W3=(S-2*FR-14*Lc)/3;hb=7*Lc}
+function fit(){const W=Math.min(innerWidth,600)-6,H=innerHeight-16-2*84-40-30;S=Math.max(240,Math.floor(Math.min(W,H)));DPR=Math.min(2,devicePixelRatio||1);cv.width=S*DPR;cv.height=S*DPR;cv.style.width=S+'px';cv.style.height=S+'px';U=S/N;FR=Math.round(S*.024);Lc=(S-2*FR)/20.8;W3=(S-2*FR-14*Lc)/3;hb=7*Lc}
 addEventListener('resize',fit);
 function rr(x,y,w,h,r){g.beginPath();g.roundRect(x,y,w,h,r)}
 function star(x,y,r,c){c.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,q=i%2?r*.45:r;c.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q)}c.closePath();c.fill()}
@@ -879,7 +879,7 @@ const RA=(a,t)=>{const [x,y,z]=a,c=Math.cos(t),s=Math.sin(t),k=1-c;return [c+x*x
 const MV=(m,v)=>[m[0]*v[0]+m[1]*v[1]+m[2]*v[2],m[3]*v[0]+m[4]*v[1]+m[5]*v[2],m[6]*v[0]+m[7]*v[1]+m[8]*v[2]];
 const DFACE=[{n:[0,0,1],u:[1,0,0],v:[0,1,0],k:1},{n:[0,0,-1],u:[-1,0,0],v:[0,1,0],k:6},{n:[1,0,0],u:[0,0,-1],v:[0,1,0],k:3},{n:[-1,0,0],u:[0,0,1],v:[0,1,0],k:4},{n:[0,-1,0],u:[1,0,0],v:[0,0,1],k:2},{n:[0,1,0],u:[1,0,0],v:[0,0,-1],k:5}];
 const DROT={1:[1,0,0,0,1,0,0,0,1],6:RY(Math.PI),3:RY(-Math.PI/2),4:RY(Math.PI/2),2:RX(-Math.PI/2),5:RX(Math.PI/2)};
-const DTILT=[M3(RZ(-.1),M3(RX(-.42),RY(.42))),M3(RZ(.12),M3(RX(-.42),RY(-.42)))];
+const DTILT=[M3(RZ(-.08),M3(RX(-.3),RY(.32))),M3(RZ(.1),M3(RX(-.3),RY(-.32)))];
 const rndAxis=()=>{const a=[Math.random()-.5,Math.random()-.5,Math.random()-.5],l=Math.hypot(...a)||1;return a.map(v=>v/l)};
 const hex6=h=>h&&h.length===4?'#'+[...h.slice(1)].map(c=>c+c).join(''):(h||'#fffdf7');
 const _dtex={};function dieTex(v,sk,pc){const key=v+sk+pc;if(_dtex[key])return _dtex[key];const c=document.createElement('canvas');c.width=c.height=128;paintDie(c.getContext('2d'),128,v,sk,pc,0);return _dtex[key]=c}
@@ -894,14 +894,15 @@ function die3D(x,cx,cy,size,M,sk,pc){const h=size/2,d=DICEBY[sk]||DICE[0],edge=s
 function dieM(k,v,spin,ax){return M3(DTILT[k],M3(spin?RA(ax,spin):[1,0,0,0,1,0,0,0,1],DROT[v]||DROT[1]))}
 let BD=null;const FLY=[];function flyPos(p,i,t){for(let k=FLY.length-1;k>=0;k--){const f=FLY[k];if(f.p!==p||f.i!==i)continue;const a=(t-f.t)/.6;if(a>=1){FLY.splice(k,1);return null}const e=a<.5?2*a*a:1-Math.pow(-2*a+2,2)/2;return [f.a[0]+(f.b[0]-f.a[0])*e,f.a[1]+(f.b[1]-f.a[1])*e-Math.sin(a*Math.PI)*2.2]}return null}
 const bdC=[0,1].map(()=>{const c=document.createElement('canvas');c.width=c.height=128;return c});
-function drawBD(t){if(!BD||!G)return;const a=Math.max(0,t-BD.t),L=1.75;if(a>L){BD=null;return}const ds=S*.15,R2=rp(...BX[BD.p].map(v=>v+4)),[sx,sy]=WP(...R2).map(v=>v*U),c=S/2;
+function drawBD(t){if(!BD||!G)return;const a=Math.max(0,t-BD.t),L=1.75;if(a>L){BD=null;return}const ds=S*.18,R2=rp(...BX[BD.p].map(v=>v+4)),[sx,sy]=WP(...R2).map(v=>v*U),c=S/2;
   for(let k=0;k<2;k++){const ex=c+(k?1:-1)*ds*.62,ey=c+(k?.08:-.08)*ds;const q=Math.min(1,a/.75),e=1-Math.pow(1-q,3);const x=sx+(ex-sx)*e,bounce=Math.abs(Math.sin(q*Math.PI*2.5))*(1-q)*ds*.9,y=sy+(ey-sy)*e-bounce;
     const rolling=a<.75,v=Math.min(6,Math.max(1,(BD.d&&BD.d[k])||1)),spin=rolling?BD.th[k]*Math.pow(1-q,2):0;
     g.save();g.globalAlpha=a>L-.3?(L-a)/.3:1;g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(x,y+bounce+ds*.5,ds*.5,ds*.16,0,0,6.3);g.fill();
-    const sc=1+(rolling?.15*(1-q):0);die3D(g,x,y,ds*.78*sc,dieM(k,v,spin,BD.ax[k]),dskinOf(BD.p),COL[BD.p]);g.restore()}}
+    const sc=1+(rolling?.15*(1-q):0);die3D(g,x,y,ds*.86*sc,dieM(k,v,spin,BD.ax[k]),dskinOf(BD.p),COL[BD.p]);g.restore()}}
 function dskinOf(p){const pl=G.players[p];return isMine(p)?PR.dskin:(pl.dskin||'classic')}
 const PAX=[rndAxis(),rndAxis()];function drawDie(c,p,k,s){s=s||116;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,s,s);const dv=Array.isArray(G.dice)?G.dice[k<0?0:k]:G.dice;const v=Math.min(6,Math.max(1,dv||1)),kk=k<0?0:k;
-  die3D(c,s/2,s/2,s*.6,dieM(kk,v,diceAnim>0?diceAnim*16:0,PAX[kk]),dskinOf(p),COL[p])}
+  let used=false;if(G.rolled&&Array.isArray(G.dice)&&diceAnim<=0){const r=G.moves.slice();for(let j=0;j<=kk;j++){const ix=r.indexOf(G.dice[j]);if(j===kk)used=ix<0;if(ix>=0)r.splice(ix,1)}}
+  c.globalAlpha=used?.32:1;die3D(c,s/2,s/2,s*.68,dieM(kk,v,diceAnim>0?diceAnim*16:0,PAX[kk]),dskinOf(p),COL[p]);c.globalAlpha=1}
 let last=performance.now();function loop(now){const dt=Math.min(.05,(now-last)/1000);last=now;stepAnim(dt);if($('game').classList.contains('on'))draw(now/1000);requestAnimationFrame(loop)}requestAnimationFrame(loop);
 cv.addEventListener('pointerdown',e=>{if(!canAct()||!G.rolled||animating())return;const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)/U,y=(e.clientY-r.top)/U;let best=-1,bd=1.25;
   const lp=legalPawns(),MV=mover(G);for(const i of lp){const [tx,ty]=tpos(MV,i,disp[MV][i]);const d=Math.hypot(tx-x,ty-y);if(d<bd){bd=d;best=i}}if(best<0&&lp.length===1)best=lp[0];if(best>=0)tryMove(best)});
@@ -1006,7 +1007,7 @@ function renderLeague(){weekCheck();const rows=leagueRows();const me=rows.findIn
 $('hLeague').onclick=()=>{renderLeague();cur='league';document.querySelectorAll('.scr').forEach(e=>e.classList.toggle('on',e.id==='sLeague'));sfx.tap()};
 // ================= help
 const HELP={old:'<p>Roll a 6 to move a pawn out of base. Move clockwise around the board and into your coloured lane.</p><p>Land on a rival to send it back to base (not on star squares). Rolling a 6, capturing or reaching home gives you another roll. Three 6s in a row: turn lost.</p><p>First to bring all pawns to the centre wins.</p>',
- spanish:'<p><b>Goal:</b> be the first to bring all 4 pawns to the centre.</p><p><b>Board:</b> 68 squares, pawns move <b>anticlockwise</b>. Your start square is square <b>1</b> (in your colour) and every square counts your steps. At square <b>64</b> (star) you turn into your coloured lane: 7 squares, then the centre. 12 safe squares (stars and the 4 start squares). Max 2 pawns per square.</p><p><b>Start:</b> all pawns begin at home. Everyone rolls one die; the highest starts. Turns go anticlockwise.</p><p><b>Your turn:</b> roll two dice; each die is a separate move, with the same pawn or two pawns, in any order. You must use as many dice as you can. If only one can be played, the other is lost.</p><p><b>Leaving home:</b> a <b>5</b> must bring a pawn out to your start square. Double 5 brings two out. A total of 5 (1+4, 2+3) also brings one out using both dice. You can\'t leave if two of your own pawns are on the start square. If your start square holds two pawns and at least one is a rival, the leaving pawn captures the rival that arrived last, even though it is safe.</p><p><b>Moving:</b> enter the centre with the exact number. Landing on a lone rival on a normal square captures it. Nobody is captured on safe squares.</p><p><b>Blockades:</b> two of your pawns on one square form a blockade nobody can pass or land on, not even you. Two different players\' pawns on a safe square block too. If you roll doubles and have a blockade, your first die must open it, and it can\'t be closed again with that roll.</p><p><b>Doubles:</b> play, then roll again. Third double in a row: no move, your last moved pawn goes home (not from the lane or centre).</p><p><b>Bonuses:</b> capture = <b>+20</b> steps, reaching the centre = <b>+10</b>, played right away with one pawn. If no pawn can use it, it is lost.</p>',
+ spanish:'<p><b>Goal:</b> be the first to bring all 4 pawns to the centre.</p><p><b>Board:</b> 68 squares, pawns move <b>anticlockwise</b>. Your start square is square <b>1</b> (in your colour) and every square counts your steps. At square <b>64</b> (star) you turn into your coloured lane: 7 squares, then the centre. 12 safe squares (stars and the 4 start squares). Max 2 pawns per square.</p><p><b>Start:</b> all pawns begin at home. Everyone rolls one die; the highest starts. Turns go anticlockwise.</p><p><b>Your turn:</b> roll two dice; each die is a separate move, with the same pawn or two pawns, in any order. You must use as many dice as you can. If only one can be played, the other is lost.</p><p><b>Leaving home:</b> a <b>5</b> must bring a pawn out to your start square. Double 5 brings two out. A total of 5 (1+4, 2+3) also brings one out using both dice. You can\'t leave if two of your own pawns are on the start square. If your start square holds two pawns and at least one is a rival, the leaving pawn captures the rival that arrived last, even though it is safe.</p><p><b>Moving:</b> enter the centre with the exact number. Landing on a lone rival on a normal square captures it. Nobody is captured on safe squares.</p><p><b>Blockades:</b> two of your pawns on one square form a blockade nobody can pass or land on, not even you. Two different players\' pawns on a safe square block too. If you roll doubles and have a blockade, your first die must open it when that pawn can move, and it can\'t be closed again with that roll. This also counts when one of your pawns shares a safe square with another player\'s pawn: on doubles you must move it away.</p><p><b>Doubles:</b> play, then roll again. Third double in a row: no move, your last moved pawn goes home (not from the lane or centre).</p><p><b>Bonuses:</b> capture = <b>+20</b> steps, reaching the centre = <b>+10</b>, played right away with one pawn. If no pawn can use it, it is lost.</p>',
  quick:'<p>Quick: each player has just <b>2 pawns</b>, one already on the start square. Same Parchís rules, much faster games.</p>'};
 function showHelp(v){$('helpT').innerHTML=(v==='quick'?HELP.quick:'')+HELP.spanish+(v!=='classic'?'':'')+'<p style="color:var(--mute)">Team Up: partners sit opposite each other and can\'t capture each other. When you finish, you keep rolling and move your partner&#39;s pawns. A team wins when both partners finish.</p>';$('ovHelp').classList.add('on')}
 $('aHelp').onclick=()=>showHelp(aVer);$('helpOk').onclick=()=>$('ovHelp').classList.remove('on');
